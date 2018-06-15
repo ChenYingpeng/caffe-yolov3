@@ -15,4 +15,4 @@ make -j6
 
 # Download Model
 
-[model](https://pan.baidu.com/s/1yiCrnmsOm0hbweJBiiUScQ)
+Baidu link [model](https://pan.baidu.com/s/1yiCrnmsOm0hbweJBiiUScQ)
