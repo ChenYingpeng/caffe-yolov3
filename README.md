@@ -16,3 +16,8 @@ make -j6
 # Download Model
 
 Baidu link [model](https://pan.baidu.com/s/1yiCrnmsOm0hbweJBiiUScQ)
+
+
+# Note
+
+Only inference
