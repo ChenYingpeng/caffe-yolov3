@@ -1,4 +1,7 @@
 # caffe-yolov3
+# Paltform
+Ubuntu16.04LTS,Jetson-TX2
+
 # Install
 git clone https://github.com/ChenYingpeng/caffe-yolov3
 
