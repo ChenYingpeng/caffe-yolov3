@@ -102,15 +102,17 @@ void forward_yolo_layer_gpu(const float* input,layer l)
 
 int yolo_num_detections(layer l,float thresh)
 {
-    int i,n;
+    int i,n,b;
     int count = 0;
+  for(b = 0;b < l.batch;++b){
     for(i=0;i<l.w*l.h;++i){
         for(n=0;n<l.n;++n){
-            int obj_index = entry_index(l,0,n*l.w*l.h+i,4);
+            int obj_index = entry_index(l,b,n*l.w*l.h+i,4);
             if(l.output[obj_index] > thresh)
                 ++count;
         }
     }
+  }
     return count;
 }
 
@@ -187,29 +189,31 @@ box get_yolo_box(float* x,float* biases,int n,int index,int i,int j,int lw, int 
 
 int get_yolo_detections(layer l,int w, int h, int netw,int neth,float thresh,int *map,int relative,detection *dets)
 {
-    int i,j,n;
+    int i,j,n,b;
     float* predictions = l.output;
     int count = 0;
+  for(b = 0;b < l.batch;++b){
     for(i=0;i<l.w*l.h;++i){
         int row = i/l.w;
         int col = i%l.w;
         for(n = 0;n<l.n;++n){           
-            int obj_index = entry_index(l,0,n*l.w*l.h + i,4);
+            int obj_index = entry_index(l,b,n*l.w*l.h + i,4);
             float objectness = predictions[obj_index];
             if(objectness <= thresh) continue;
-            int box_index = entry_index(l,0,n*l.w*l.h + i,0);
+            int box_index = entry_index(l,b,n*l.w*l.h + i,0);
 
             dets[count].bbox = get_yolo_box(predictions,l.biases,l.mask[n],box_index,col,row,l.w,l.h,netw,neth,l.w*l.h);
             dets[count].objectness = objectness;
             dets[count].classes = l.classes;
             for(j=0;j<l.classes;++j){
-                int class_index = entry_index(l,0,n*l.w*l.h+i,4+1+j);
+                int class_index = entry_index(l,b,n*l.w*l.h+i,4+1+j);
                 float prob = objectness*predictions[class_index];
                 dets[count].prob[j] = (prob > thresh) ? prob : 0;
             }
             ++count;
         }
     }
+  }
     correct_yolo_boxes(dets,count,w,h,netw,neth,relative);
     return count;
 }
@@ -220,7 +224,7 @@ void fill_network_boxes(vector<layer> layers_params,int w,int h,float thresh, fl
     int j;
     for(j=0;j<layers_params.size();++j){
         layer l = layers_params[j];
-        int count = get_yolo_detections(l,w,h,416,416,thresh,map,relative,dets);
+        int count = get_yolo_detections(l,w,h,netW,netH,thresh,map,relative,dets);
         dets += count;
     }
 }
@@ -240,22 +244,19 @@ detection* get_network_boxes(vector<layer> layers_params,
 //get detection result
 detection* get_detections(vector<Blob<float>*> blobs,int img_w,int img_h,int *nboxes)
 {
-    int classes = 80;
-    float thresh = 0.5;
-    float hier_thresh = 0.5;
-    float nms = 0.45;
+
 
     vector<layer> layers_params;
     layers_params.clear();
     for(int i=0;i<blobs.size();++i){
-        layer l_params = make_yolo_layer(1,blobs[i]->width(),blobs[i]->height(),3,9,classes);
+        layer l_params = make_yolo_layer(1,blobs[i]->width(),blobs[i]->height(),numBBoxes,numAnchors,classes);
         layers_params.push_back(l_params);
         forward_yolo_layer_gpu(blobs[i]->gpu_data(),l_params);
     }
     
 
     //get network boxes
-    detection* dets = get_network_boxes(layers_params,img_w,img_h,thresh,hier_thresh,0,1,nboxes);
+    detection* dets = get_network_boxes(layers_params,img_w,img_h,thresh,hier_thresh,0,relative,nboxes);
 
     //release layer memory
     for(int index =0;index < layers_params.size();++index){

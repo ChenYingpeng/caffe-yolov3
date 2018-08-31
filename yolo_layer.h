@@ -12,6 +12,16 @@
 
 using namespace caffe;
 
+const int netW = 416;
+const int netH = 416;
+const int classes = 80;
+const float thresh = 0.5;
+const float hier_thresh = 0.5;
+const float nms = 0.45;
+const int numBBoxes = 3;
+const int numAnchors = 9;
+const int relative = 1;
+
 typedef struct{
     float x,y,w,h;
 }box;

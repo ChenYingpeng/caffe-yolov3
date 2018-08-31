@@ -23,10 +23,10 @@ using namespace caffe;
 using namespace cv;
 
 //YOLOV3
-const string& model_file = "/home/nvidia/projects/sys-detect-speed/data/networks/yolov3/yolov3.prototxt";
-const string& weights_file = "/home/nvidia/projects/sys-detect-speed/data/networks/yolov3/yolov3.caffemodel";
+const string& model_file = "/home/nvidia/projects/caffe-yolov3/data/networks/yolov3/yolov3.prototxt";
+const string& weights_file = "/home/nvidia/projects/caffe-yolov3/data/networks/yolov3/yolov3.caffemodel";
 
-const char* imgFilename = "/home/nvidia/projects/sys-detect-speed/data/images/dog.jpg";
+const char* imgFilename = "/home/nvidia/projects/caffe-yolov3/data/images/dog.jpg";
 
 uint64_t current_timestamp() {
     struct timeval te; 
@@ -76,8 +76,6 @@ int main( int argc, char** argv )
     LOG(INFO) << "Input data layer height is  " << input_data_blobs->height();
 
     int size = input_data_blobs->channels()*input_data_blobs->width()*input_data_blobs->height();
-    float* inputDataCUDA = NULL;
-    assert(!cudaMallocManaged(&inputDataCUDA, size*sizeof(float)));
 
     uint64_t beginDataTime =  current_timestamp();
     //load image
@@ -149,8 +147,6 @@ int main( int argc, char** argv )
     free_image(im);
     free_image(sized);
         
-
-    cudaFree(inputDataCUDA);
     printf("detectnet-camera:  video device has been un-initialized.\n");
     printf("detectnet-camera:  this concludes the test of the video device.\n");
     return 0;
