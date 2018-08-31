@@ -2,6 +2,8 @@
 # Paltform
 Have tested on Ubuntu16.04LTS with Jetson-TX2 and Ubuntu16.04LTS with gtx1060;
 
+NOTE: You need change CMakeList.txt on Ubuntu16.04LTS with GTX1060.
+
 # Install
 git clone https://github.com/ChenYingpeng/caffe-yolov3
 
