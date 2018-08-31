@@ -1,6 +1,6 @@
 # caffe-yolov3
 # Paltform
-Ubuntu16.04LTS,Jetson-TX2
+Have tested on Ubuntu16.04LTS with Jetson-TX2 and Ubuntu16.04LTS with gtx1060;
 
 # Install
 git clone https://github.com/ChenYingpeng/caffe-yolov3
