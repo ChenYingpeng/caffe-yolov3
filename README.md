@@ -26,3 +26,5 @@ Baidu link [model](https://pan.baidu.com/s/1yiCrnmsOm0hbweJBiiUScQ)
 # Note
 
 Only inference
+
+Support input res 320x320,416x416,608x608 etc.
