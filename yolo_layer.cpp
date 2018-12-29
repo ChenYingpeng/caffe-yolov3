@@ -1,5 +1,5 @@
 /*
- * Company:	Systhesis
+ * Company:	Synthesis
  * Author: 	Chen
  * Date:	2018/06/04
  */
@@ -35,17 +35,17 @@ layer make_yolo_layer(int batch,int w,int h,int n,int total,int classes)
         l.biases[i] = biases[i];
     }
     l.mask = (int*)calloc(n,sizeof(int));
-    if(l.w == 13){
+    if(l.w == netW / 32){
         int j = 6;
         for(int i =0;i<l.n;++i)
             l.mask[i] = j++;
     }
-    if(l.w == 26){
+    if(l.w == netW / 16){
         int j = 3;
         for(int i =0;i<l.n;++i)
             l.mask[i] = j++;
     }
-    if(l.w == 52){
+    if(l.w == netW / 8){
         int j = 0;
         for(int i =0;i<l.n;++i)
             l.mask[i] = j++;
@@ -111,8 +111,10 @@ int yolo_num_detections(layer l,float thresh)
             if(l.output[obj_index] > thresh)
                 ++count;
         }
+	
     }
   }
+  //printf("count = %d\n",count);
     return count;
 }
 

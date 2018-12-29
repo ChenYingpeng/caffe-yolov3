@@ -10,8 +10,9 @@ set(
 	CUDA_NVCC_FLAGS
 	${CUDA_NVCC_FLAGS}; 
     -O3 
-	-gencode arch=compute_53,code=sm_53
-	-gencode arch=compute_62,code=sm_62
+	-gencode arch=compute_53,code=sm_53  #tegra tx1 
+        -gencode arch=compute_61,code=sm_61  #gtx 1060
+	-gencode arch=compute_62,code=sm_62  #tegra tx2
 )
 
 # setup project output paths
@@ -32,8 +33,8 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_OUTPUT_DIR}/lib)
 # build C/C++ interface
 include_directories(${PROJECT_INCLUDE_DIR} ${GIE_PATH}/include)
 include_directories(${PROJECT_INCLUDE_DIR} 
-	/home/nvidia/caffe/include 
-	/home/nvidia/caffe/build/include 
+	/home/chen/caffe/include 
+	/home/chen/caffe/build/include 
 )
 
 
@@ -42,11 +43,11 @@ file(GLOB inferenceIncludes *.h )
 
 cuda_add_library(sysDetectSpeed SHARED ${inferenceSources})
 target_link_libraries(sysDetectSpeed 
-	/home/nvidia/caffe/build/lib/libcaffe.so  
-	/usr/lib/aarch64-linux-gnu/libglog.so  
-	/usr/lib/aarch64-linux-gnu/libgflags.so.2
-    	/usr/lib/aarch64-linux-gnu/libboost_system.so  
-	/usr/lib/aarch64-linux-gnu/libGLEW.so.1.13  
+	/home/chen/caffe/build/lib/libcaffe.so  
+	/usr/lib/x86_64-linux-gnu/libglog.so  
+	/usr/lib/x86_64-linux-gnu/libgflags.so.2
+    	/usr/lib/x86_64-linux-gnu/libboost_system.so  
+	/usr/lib/x86_64-linux-gnu/libGLEW.so.1.13  
 )
 
 

@@ -1,6 +1,6 @@
 
 /*
- * Company:	Systhesis
+ * Company:	Synthesis
  * Author: 	Chen
  * Date:	2018/06/04	
  */
@@ -22,11 +22,12 @@
 using namespace caffe;
 using namespace cv;
 
-//YOLOV3
-const string& model_file = "/home/nvidia/projects/caffe-yolov3/data/networks/yolov3/yolov3.prototxt";
-const string& weights_file = "/home/nvidia/projects/caffe-yolov3/data/networks/yolov3/yolov3.caffemodel";
+const int timeIters = 10;
 
-const char* imgFilename = "/home/nvidia/projects/caffe-yolov3/data/images/dog.jpg";
+//YOLOV3
+const string& model_file = "/home/chen/projects/caffe-yolov3/data/yolov3/yolov3.prototxt";//modify your model file path
+const string& weights_file = "/home/chen/projects/caffe-yolov3/data/yolov3/yolov3.caffemodel";//modify your weights file path
+const char* imgFilename = "/home/chen/projects/caffe-yolov3/data/images/dog.jpg"; //modify your images file path
 
 uint64_t current_timestamp() {
     struct timeval te; 
@@ -47,7 +48,7 @@ void sig_handler(int signo)
 
 int main( int argc, char** argv )
 {
-    printf("detectnet-camera\n  args (%i):  ", argc);
+    printf("detectnet\n  args (%i):  ", argc);
 
     for( int i=0; i < argc; i++ )
 	printf("%i [%s]  ", i, argv[i]);
@@ -77,39 +78,48 @@ int main( int argc, char** argv )
 
     int size = input_data_blobs->channels()*input_data_blobs->width()*input_data_blobs->height();
 
-    uint64_t beginDataTime =  current_timestamp();
-    //load image
-    image im = load_image_color((char*)imgFilename,0,0);
-    image sized = letterbox_image(im,input_data_blobs->width(),input_data_blobs->height());
-    cuda_push_array(input_data_blobs->mutable_gpu_data(),sized.data,size);
-
-    uint64_t endDataTime =  current_timestamp();
-
-    //YOLOV3 objection detection implementation with Caffe
-    uint64_t beginDetectTime =  current_timestamp();
-
-    net->Forward();
-
-    vector<Blob<float>*> blobs;
-    blobs.clear();
-    Blob<float>* out_blob1 = net->output_blobs()[1];
-    blobs.push_back(out_blob1);
-    Blob<float>* out_blob2 = net->output_blobs()[2];
-    blobs.push_back(out_blob2);
-    Blob<float>* out_blob3 = net->output_blobs()[0];
-    blobs.push_back(out_blob3);
-
-    printf("output blob1 shape c= %d, h = %d, w = %d\n",out_blob1->channels(),out_blob1->height(),out_blob1->width());
-    printf("output blob2 shape c= %d, h = %d, w = %d\n",out_blob2->channels(),out_blob2->height(),out_blob2->width());
-    printf("output blob3 shape c= %d, h = %d, w = %d\n",out_blob3->channels(),out_blob3->height(),out_blob3->width());
-
+    uint64_t dataTime = 0;
+    uint64_t networkTime = 0;
+    image im,sized;
     int nboxes = 0;
-    detection *dets = get_detections(blobs,im.w,im.h,&nboxes);
+    detection *dets = NULL;
+    for(int i=0;i<timeIters;++i){
+    	uint64_t beginDataTime =  current_timestamp();
+    	//load image
+    	im = load_image_color((char*)imgFilename,0,0);
+    	sized = letterbox_image(im,input_data_blobs->width(),input_data_blobs->height());
+    	cuda_push_array(input_data_blobs->mutable_gpu_data(),sized.data,size);
 
-    uint64_t endDetectTime = current_timestamp();
-    printf("object-detection:  finished processing data operation  (%zu)ms\n", endDataTime - beginDataTime);
-    printf("object-detection:  finished processing yolov3 network  (%zu)ms\n", endDetectTime - beginDetectTime);
+    	uint64_t endDataTime =  current_timestamp();
+        dataTime += (endDataTime - beginDataTime);
 
+    	//YOLOV3 objection detection implementation with Caffe
+
+    	net->Forward();
+
+    	vector<Blob<float>*> blobs;
+    	blobs.clear();
+    	Blob<float>* out_blob1 = net->output_blobs()[1];
+    	blobs.push_back(out_blob1);
+    	Blob<float>* out_blob2 = net->output_blobs()[2];
+    	blobs.push_back(out_blob2);
+    	Blob<float>* out_blob3 = net->output_blobs()[0];
+    	blobs.push_back(out_blob3);
+
+    	//printf("output blob1 shape c= %d, h = %d, w = %d\n",out_blob1->channels(),out_blob1->height(),out_blob1->width());
+    	//printf("output blob2 shape c= %d, h = %d, w = %d\n",out_blob2->channels(),out_blob2->height(),out_blob2->width());
+    	//printf("output blob3 shape c= %d, h = %d, w = %d\n",out_blob3->channels(),out_blob3->height(),out_blob3->width());
+
+    	//int nboxes = 0;
+    	//printf("img width =%d, height = %d\n",im.w,im.h);
+    	dets = get_detections(blobs,im.w,im.h,&nboxes);
+
+    	uint64_t endDetectTime = current_timestamp();
+        networkTime += (endDetectTime - endDataTime);
+    }
+    
+    printf("object-detection: total iters = %d done, processing data operation avergae time is  (%zu)ms\n", timeIters,dataTime/timeIters);
+    printf("object-detection: total iters = %d done, processing network yolov3 avergae time is (%zu)ms\n", timeIters,networkTime/timeIters);
 
     //show detection results
     Mat img = imread(imgFilename);
