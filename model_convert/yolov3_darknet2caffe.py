@@ -1,6 +1,6 @@
 # The caffe module needs to be on the Python path;
 #  we'll add it here explicitly.
-caffe_root='/home/ss/caffe/'
+caffe_root='/home/chen/caffe/'
 #os.chdir(caffe_root)
 import sys
 sys.path.insert(0,caffe_root+'python')
@@ -54,6 +54,22 @@ def darknet2caffe(cfgfile, weightfile, protofile, caffemodel):
                 scale_layer_name = '%s-scale' % block['name']
             else:
                 conv_layer_name = 'layer%d-conv' % layer_id
+                bn_layer_name = 'layer%d-bn' % layer_id
+                scale_layer_name = 'layer%d-scale' % layer_id
+
+            if batch_normalize:
+                start = load_conv_bn2caffe(buf, start, params[conv_layer_name], params[bn_layer_name], params[scale_layer_name])
+            else:
+                start = load_conv2caffe(buf, start, params[conv_layer_name])
+            layer_id = layer_id+1
+        elif block['type'] == 'depthwise_convolutional':
+            batch_normalize = int(block['batch_normalize'])
+            if block.has_key('name'):
+                conv_layer_name = block['name']
+                bn_layer_name = '%s-bn' % block['name']
+                scale_layer_name = '%s-scale' % block['name']
+            else:
+                conv_layer_name = 'layer%d-dwconv' % layer_id
                 bn_layer_name = 'layer%d-bn' % layer_id
                 scale_layer_name = 'layer%d-scale' % layer_id
 
@@ -139,6 +155,7 @@ def load_conv_bn2caffe(buf, start, conv_param, bn_param, scale_param):
 def cfg2prototxt(cfgfile):
     blocks = parse_cfg(cfgfile)
 
+    prev_filters = 3
     layers = []
     props = OrderedDict() 
     bottom = 'data'
@@ -165,6 +182,74 @@ def cfg2prototxt(cfgfile):
             conv_layer['type'] = 'Convolution'
             convolution_param = OrderedDict()
             convolution_param['num_output'] = block['filters']
+            prev_filters = block['filters']
+            convolution_param['kernel_size'] = block['size']
+            if block['pad'] == '1':
+                convolution_param['pad'] = str(int(convolution_param['kernel_size'])/2)
+            convolution_param['stride'] = block['stride']
+            if block['batch_normalize'] == '1':
+                convolution_param['bias_term'] = 'false'
+            else:
+                convolution_param['bias_term'] = 'true'
+            conv_layer['convolution_param'] = convolution_param
+            layers.append(conv_layer)
+            bottom = conv_layer['top']
+
+            if block['batch_normalize'] == '1':
+                bn_layer = OrderedDict()
+                bn_layer['bottom'] = bottom
+                bn_layer['top'] = bottom
+                if block.has_key('name'):
+                    bn_layer['name'] = '%s-bn' % block['name']
+                else:
+                    bn_layer['name'] = 'layer%d-bn' % layer_id
+                bn_layer['type'] = 'BatchNorm'
+                batch_norm_param = OrderedDict()
+                batch_norm_param['use_global_stats'] = 'true'
+                bn_layer['batch_norm_param'] = batch_norm_param
+                layers.append(bn_layer)
+
+                scale_layer = OrderedDict()
+                scale_layer['bottom'] = bottom
+                scale_layer['top'] = bottom
+                if block.has_key('name'):
+                    scale_layer['name'] = '%s-scale' % block['name']
+                else:
+                    scale_layer['name'] = 'layer%d-scale' % layer_id
+                scale_layer['type'] = 'Scale'
+                scale_param = OrderedDict()
+                scale_param['bias_term'] = 'true'
+                scale_layer['scale_param'] = scale_param
+                layers.append(scale_layer)
+
+            if block['activation'] != 'linear':
+                relu_layer = OrderedDict()
+                relu_layer['bottom'] = bottom
+                relu_layer['top'] = bottom
+                if block.has_key('name'):
+                    relu_layer['name'] = '%s-act' % block['name']
+                else:
+                    relu_layer['name'] = 'layer%d-act' % layer_id
+                relu_layer['type'] = 'ReLU'
+                if block['activation'] == 'leaky':
+                    relu_param = OrderedDict()
+                    relu_param['negative_slope'] = '0.1'
+                    relu_layer['relu_param'] = relu_param
+                layers.append(relu_layer)
+            topnames[layer_id] = bottom
+            layer_id = layer_id+1
+        elif block['type'] == 'depthwise_convolutional':
+            conv_layer = OrderedDict()
+            conv_layer['bottom'] = bottom
+            if block.has_key('name'):
+                conv_layer['top'] = block['name']
+                conv_layer['name'] = block['name']
+            else:
+                conv_layer['top'] = 'layer%d-dwconv' % layer_id
+                conv_layer['name'] = 'layer%d-dwconv' % layer_id
+            conv_layer['type'] = 'ConvolutionDepthwise'
+            convolution_param = OrderedDict()
+            convolution_param['num_output'] = prev_filters
             convolution_param['kernel_size'] = block['size']
             if block['pad'] == '1':
                 convolution_param['pad'] = str(int(convolution_param['kernel_size'])/2)
@@ -231,11 +316,16 @@ def cfg2prototxt(cfgfile):
                 max_layer['name'] = 'layer%d-maxpool' % layer_id
             max_layer['type'] = 'Pooling'
             pooling_param = OrderedDict()
-            pooling_param['kernel_size'] = block['size']
             pooling_param['stride'] = block['stride']
             pooling_param['pool'] = 'MAX'
-            if block.has_key('pad') and int(block['pad']) == 1:
-                pooling_param['pad'] = str((int(block['size'])-1)/2)
+            if (int(block['size']) - int(block['stride'])) % 2 == 0:
+		pooling_param['kernel_size'] = block['size']
+            	pooling_param['pad'] = str((int(block['size'])-1)/2)
+
+            if (int(block['size']) - int(block['stride'])) % 2 == 1:
+                pooling_param['kernel_size'] = str(int(block['size']) + 1)
+            	pooling_param['pad'] = str((int(block['size']) + 1)/2)
+            
             max_layer['pooling_param'] = pooling_param
             layers.append(max_layer)
             bottom = max_layer['top']
@@ -300,6 +390,17 @@ def cfg2prototxt(cfgfile):
 		bottom1 = topnames[prev_layer_id1]
 	 	bottom2 = topnames[prev_layer_id2]
 		route_layer['bottom'] = [bottom1, bottom2]
+	    if(4 == bottom_layer_size):
+		prev_layer_id1 = layer_id + int(layer_name[0])
+		prev_layer_id2 = layer_id + int(layer_name[1])
+		prev_layer_id3 = layer_id + int(layer_name[2])
+		prev_layer_id4 = layer_id + int(layer_name[3])
+
+		bottom1 = topnames[prev_layer_id1]
+	 	bottom2 = topnames[prev_layer_id2]
+		bottom3 = topnames[prev_layer_id3]
+	 	bottom4 = topnames[prev_layer_id4]
+		route_layer['bottom'] = [bottom1, bottom2,bottom3,bottom4]
 	    if block.has_key('name'):
                 route_layer['top'] = block['name']
                 route_layer['name'] = block['name']

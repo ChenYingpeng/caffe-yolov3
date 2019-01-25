@@ -12,15 +12,21 @@
 
 using namespace caffe;
 
-const int netW = 416;
-const int netH = 416;
+
 const int classes = 80;
 const float thresh = 0.5;
 const float hier_thresh = 0.5;
 const float nms = 0.45;
 const int numBBoxes = 3;
-const int numAnchors = 9;
 const int relative = 1;
+
+const int yolov3_numAnchors = 9;
+const int yolov3_tiny_numAnchors = 6;
+
+enum NetType{
+    YOLOV3 = 0,
+    YOLOV3_TINY = 1
+};
 
 typedef struct{
     float x,y,w,h;
@@ -54,7 +60,7 @@ void free_yolo_layer(layer l);
 
 void forward_yolo_layer_gpu(const float* input,layer l, float* output);
 
-detection* get_detections(vector<Blob<float>*> blobs,int img_w,int img_h,int* nboxes);
+detection* get_detections(vector<Blob<float>*> blobs,int img_w,int img_h,int net_w,int net_h,int* nboxes,NetType type);
 
 void free_detections(detection *dets,int nboxes);
 

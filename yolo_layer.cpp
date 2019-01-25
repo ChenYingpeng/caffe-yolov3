@@ -12,10 +12,13 @@
 #include <stdio.h>
 #include <math.h>
 
-
+//yolov3
 float biases[18] = {10,13,16,30,33,23,30,61,62,45,59,119,116,90,156,198,373,326};
 
-layer make_yolo_layer(int batch,int w,int h,int n,int total,int classes)
+//yolov3-tiny
+float biases_tiny[12] = {10,14,23,27,37,58,81,82,135,169,344,319};
+
+layer make_yolo_layer(int batch,int w,int h,int net_w,int net_h,int n,int total,int classes)
 {
     layer l = {0};
     l.n = n;
@@ -31,28 +34,48 @@ layer make_yolo_layer(int batch,int w,int h,int n,int total,int classes)
     l.inputs = l.w*l.h*l.c;
 
     l.biases = (float*)calloc(total*2,sizeof(float));
-    for(int i =0;i<total*2;++i){
-        l.biases[i] = biases[i];
-    }
+
     l.mask = (int*)calloc(n,sizeof(int));
-    if(l.w == netW / 32){
-        int j = 6;
-        for(int i =0;i<l.n;++i)
-            l.mask[i] = j++;
+    if(9 == total){
+        for(int i =0;i<total*2;++i){
+            l.biases[i] = biases[i];
+        }
+        if(l.w == net_w / 32){
+            int j = 6;
+            for(int i =0;i<l.n;++i)
+                l.mask[i] = j++;
+        }
+        if(l.w == net_w / 16){
+            int j = 3;
+            for(int i =0;i<l.n;++i)
+                l.mask[i] = j++;
+        }
+        if(l.w == net_w / 8){
+            int j = 0;
+            for(int i =0;i<l.n;++i)
+                l.mask[i] = j++;
+        }
     }
-    if(l.w == netW / 16){
-        int j = 3;
-        for(int i =0;i<l.n;++i)
-            l.mask[i] = j++;
-    }
-    if(l.w == netW / 8){
-        int j = 0;
-        for(int i =0;i<l.n;++i)
-            l.mask[i] = j++;
+
+    if(6 == total){
+        for(int i =0;i<total*2;++i){
+            l.biases[i] = biases_tiny[i];
+        }
+        if(l.w == net_w / 32){
+            int j = 3;
+            for(int i =0;i<l.n;++i)
+                l.mask[i] = j++;
+        }
+        if(l.w == net_w / 16){
+            int j = 0;
+            for(int i =0;i<l.n;++i)
+                l.mask[i] = j++;
+        }
     }
     l.outputs = l.inputs;
     l.output = (float*)calloc(batch*l.outputs,sizeof(float));
     l.output_gpu = cuda_make_array(l.output,batch*l.outputs);
+    
     return l;
 }
 
@@ -221,44 +244,49 @@ int get_yolo_detections(layer l,int w, int h, int netw,int neth,float thresh,int
 }
 
 
-void fill_network_boxes(vector<layer> layers_params,int w,int h,float thresh, float hier, int *map,int relative,detection *dets)
+void fill_network_boxes(vector<layer> layers_params,int img_w,int img_h,int net_w,int net_h,float thresh, float hier, int *map,int relative,detection *dets)
 {
     int j;
     for(j=0;j<layers_params.size();++j){
         layer l = layers_params[j];
-        int count = get_yolo_detections(l,w,h,netW,netH,thresh,map,relative,dets);
+        int count = get_yolo_detections(l,img_w,img_h,net_w,net_h,thresh,map,relative,dets);
         dets += count;
     }
 }
 
 
 detection* get_network_boxes(vector<layer> layers_params,
-                             int img_w,int img_h,float thresh,float hier,int* map,int relative,int *num)
+                             int img_w,int img_h,int net_w,int net_h,float thresh,float hier,int* map,int relative,int *num)
 {
     //make network boxes
     detection *dets = make_network_boxes(layers_params,thresh,num);
 
     //fill network boxes
-    fill_network_boxes(layers_params,img_w,img_h,thresh,hier,map,relative,dets);
+    fill_network_boxes(layers_params,img_w,img_h,net_w,net_h,thresh,hier,map,relative,dets);
     return dets;
 }
 
 //get detection result
-detection* get_detections(vector<Blob<float>*> blobs,int img_w,int img_h,int *nboxes)
+detection* get_detections(vector<Blob<float>*> blobs,int img_w,int img_h,int net_w,int net_h,int *nboxes,NetType type)
 {
-
-
     vector<layer> layers_params;
     layers_params.clear();
     for(int i=0;i<blobs.size();++i){
-        layer l_params = make_yolo_layer(1,blobs[i]->width(),blobs[i]->height(),numBBoxes,numAnchors,classes);
+        layer l_params;
+        if(YOLOV3 == type){
+            l_params = make_yolo_layer(1,blobs[i]->width(),blobs[i]->height(),net_w,net_h,numBBoxes,yolov3_numAnchors,classes);
+        }
+        else if(YOLOV3_TINY == type){
+            l_params = make_yolo_layer(1,blobs[i]->width(),blobs[i]->height(),net_w,net_h,numBBoxes,yolov3_tiny_numAnchors,classes);
+        }
+
         layers_params.push_back(l_params);
         forward_yolo_layer_gpu(blobs[i]->gpu_data(),l_params);
     }
     
 
     //get network boxes
-    detection* dets = get_network_boxes(layers_params,img_w,img_h,thresh,hier_thresh,0,relative,nboxes);
+    detection* dets = get_network_boxes(layers_params,img_w,img_h,net_w,net_h,thresh,hier_thresh,0,relative,nboxes);
 
     //release layer memory
     for(int index =0;index < layers_params.size();++index){
