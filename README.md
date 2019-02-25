@@ -46,6 +46,6 @@ Baidu link [model](https://pan.baidu.com/s/1yiCrnmsOm0hbweJBiiUScQ)
 
 2.Support model such as yolov3、yolov3-spp、yolov3-tiny、mobilenet_v1_yolov3 etc and input network size 320x320,416x416,608x608 etc.
 
-3.Yolov3-tiny (test COCO,mAP = 0.3798,To be optimized)
+3.Mobilenet_v1 + yolov3 (test COCO,mAP = 0.3798,To be optimized)
 
 4.Yolov3-tiny: Caffe can not duplicate the layer that maxpool layer (params:kernel_size = 2,stride = 1),so rewrite max_pool_1d function for recurrenting it.
