@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
-project(sysDetectSpeed)
+project(caffe-yolov3)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")	# -std=gnu++11
 
@@ -14,6 +14,16 @@ set(
         -gencode arch=compute_61,code=sm_61  #gtx 1060
 	-gencode arch=compute_62,code=sm_62  #tegra tx2
 )
+
+if(CUDA_VERSION_MAJOR GREATER 9)
+	message("-- CUDA ${CUDA_VERSION_MAJOR} detected, enabling SM_72")
+	set (
+		CUDA_NVCC_FLAGS
+		${CUDA_NVCC_FLAGS};
+		-gencode arch=compute_72,code=sm_72 #xavier
+                -gencode arch=compute_75,code=sm_75 #rtx2080 
+	)
+endif()
 
 # setup project output paths
 set(PROJECT_OUTPUT_DIR  ${PROJECT_BINARY_DIR}/${CMAKE_SYSTEM_PROCESSOR})
@@ -33,17 +43,17 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_OUTPUT_DIR}/lib)
 # build C/C++ interface
 include_directories(${PROJECT_INCLUDE_DIR} ${GIE_PATH}/include)
 include_directories(${PROJECT_INCLUDE_DIR} 
-	/home/chen/caffe/include 
-	/home/chen/caffe/build/include 
+	/home/ss/caffe/include 
+	/home/ss/caffe/build/include 
 )
 
 
 file(GLOB inferenceSources *.cpp *.cu )
 file(GLOB inferenceIncludes *.h )
 
-cuda_add_library(sysDetectSpeed SHARED ${inferenceSources})
-target_link_libraries(sysDetectSpeed 
-	/home/chen/caffe/build/lib/libcaffe.so  
+cuda_add_library(yolov3-plugin SHARED ${inferenceSources})
+target_link_libraries(yolov3-plugin 
+	/home/ss/caffe/build/lib/libcaffe.so  
 	/usr/lib/x86_64-linux-gnu/libglog.so  
 	/usr/lib/x86_64-linux-gnu/libgflags.so.2
     	/usr/lib/x86_64-linux-gnu/libboost_system.so  
@@ -67,15 +77,15 @@ add_subdirectory(detectnet)
 #setup opencv
 FIND_PACKAGE(OpenCV REQUIRED)
 
-TARGET_LINK_LIBRARIES(sysDetectSpeed ${OpenCV_LIBS})
+TARGET_LINK_LIBRARIES(yolov3-plugin ${OpenCV_LIBS})
 
 # install
 foreach(include ${inferenceIncludes})
-    install(FILES "${include}" DESTINATION include/sysDetectSpeed)
+    install(FILES "${include}" DESTINATION include/yolov3-plugin)
 endforeach()
 
 # install the shared library
-install(TARGETS sysDetectSpeed DESTINATION lib/sysDetectSpeed EXPORT sysDetectSpeedConfig)
+install(TARGETS yolov3-plugin DESTINATION lib/yolov3-plugin EXPORT yolov3-pluginConfig)
 
 # install the cmake project, for importing
-install(EXPORT sysDetectSpeedConfig DESTINATION share/sysDetectSpeed/cmake)
+install(EXPORT yolov3-pluginConfig DESTINATION share/yolov3-plugin/cmake)

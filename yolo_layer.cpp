@@ -127,17 +127,15 @@ int yolo_num_detections(layer l,float thresh)
 {
     int i,n,b;
     int count = 0;
-  for(b = 0;b < l.batch;++b){
-    for(i=0;i<l.w*l.h;++i){
-        for(n=0;n<l.n;++n){
-            int obj_index = entry_index(l,b,n*l.w*l.h+i,4);
-            if(l.output[obj_index] > thresh)
-                ++count;
+    for(b = 0;b < l.batch;++b){
+        for(i=0;i<l.w*l.h;++i){
+            for(n=0;n<l.n;++n){
+                int obj_index = entry_index(l,b,n*l.w*l.h+i,4);
+                if(l.output[obj_index] > thresh)
+                    ++count;
+            }
         }
-	
     }
-  }
-  //printf("count = %d\n",count);
     return count;
 }
 
@@ -267,24 +265,17 @@ detection* get_network_boxes(vector<layer> layers_params,
 }
 
 //get detection result
-detection* get_detections(vector<Blob<float>*> blobs,int img_w,int img_h,int net_w,int net_h,int *nboxes,NetType type)
+detection* get_detections(vector<Blob<float>*> blobs,int img_w,int img_h,int net_w,int net_h,int *nboxes)
 {
     vector<layer> layers_params;
     layers_params.clear();
     for(int i=0;i<blobs.size();++i){
         layer l_params;
-        if(YOLOV3 == type){
-            l_params = make_yolo_layer(1,blobs[i]->width(),blobs[i]->height(),net_w,net_h,numBBoxes,yolov3_numAnchors,classes);
-        }
-        else if(YOLOV3_TINY == type){
-            l_params = make_yolo_layer(1,blobs[i]->width(),blobs[i]->height(),net_w,net_h,numBBoxes,yolov3_tiny_numAnchors,classes);
-        }
-
+        l_params = make_yolo_layer(blobs[i]->num(),blobs[i]->width(),blobs[i]->height(),net_w,net_h,num_bboxes,blobs.size()*dev_num_anchors,classes);
         layers_params.push_back(l_params);
         forward_yolo_layer_gpu(blobs[i]->gpu_data(),l_params);
     }
     
-
     //get network boxes
     detection* dets = get_network_boxes(layers_params,img_w,img_h,net_w,net_h,thresh,hier_thresh,0,relative,nboxes);
 
@@ -293,7 +284,9 @@ detection* get_detections(vector<Blob<float>*> blobs,int img_w,int img_h,int net
         free_yolo_layer(layers_params[index]);
     }
 
-    if(nms) do_nms_sort(dets,(*nboxes),classes,nms);
+    //do nms
+    if(nms_thresh) do_nms_sort(dets,(*nboxes),classes,nms_thresh);
+
     return dets;       
 }
 
