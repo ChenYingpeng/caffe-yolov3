@@ -43,17 +43,17 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_OUTPUT_DIR}/lib)
 # build C/C++ interface
 include_directories(${PROJECT_INCLUDE_DIR} ${GIE_PATH}/include)
 include_directories(${PROJECT_INCLUDE_DIR} 
-	/home/ss/caffe/include 
-	/home/ss/caffe/build/include 
+	/home/chen/caffe/include 
+	/home/chen/caffe/build/include 
 )
 
 
-file(GLOB inferenceSources *.cpp *.cu )
-file(GLOB inferenceIncludes *.h )
+file(GLOB inferenceSources src/*.cpp src/*.cu )
+file(GLOB inferenceIncludes src/*.h )
 
 cuda_add_library(yolov3-plugin SHARED ${inferenceSources})
 target_link_libraries(yolov3-plugin 
-	/home/ss/caffe/build/lib/libcaffe.so  
+	/home/chen/caffe/build/lib/libcaffe.so  
 	/usr/lib/x86_64-linux-gnu/libglog.so  
 	/usr/lib/x86_64-linux-gnu/libgflags.so.2
     	/usr/lib/x86_64-linux-gnu/libboost_system.so  
@@ -71,8 +71,8 @@ endforeach()
 # create symbolic link for network data
 execute_process( COMMAND "${CMAKE_COMMAND}" "-E" "create_symlink" "${PROJECT_SOURCE_DIR}/data/networks" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/networks" )
   
-add_subdirectory(detectnet)
-
+add_subdirectory(demo)
+add_subdirectory(eval)
 
 #setup opencv
 FIND_PACKAGE(OpenCV REQUIRED)

@@ -13,8 +13,8 @@
 using namespace caffe;
 
 
-const int classes = 80;
-const float thresh = 0.5;
+// const int classes = 80;
+// const float thresh = 0.5;
 const float hier_thresh = 0.5;
 const float nms_thresh = 0.45;
 const int num_bboxes = 3;
@@ -54,7 +54,7 @@ void free_yolo_layer(layer l);
 
 void forward_yolo_layer_gpu(const float* input,layer l, float* output);
 
-detection* get_detections(vector<Blob<float>*> blobs,int img_w,int img_h,int net_w,int net_h,int* nboxes);
+detection* get_detections(std::vector<Blob<float>*> blobs,int img_w,int img_h,int net_w,int net_h,float thresh, int classes, int* nboxes);
 
 void free_detections(detection *dets,int nboxes);
 

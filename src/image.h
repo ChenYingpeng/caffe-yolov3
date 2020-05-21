@@ -14,6 +14,11 @@ typedef struct
     float *data;
 }image;
 
+image make_image(int w, int h, int c);
+
+image make_empty_image(int w, int h, int c);
+
+
 image load_image_color(char* filename,int w,int h);
 
 void free_image(image m);

@@ -13,7 +13,10 @@
 #include <math.h>
 
 //yolov3
-float biases[18] = {10,13,16,30,33,23,30,61,62,45,59,119,116,90,156,198,373,326};
+//float biases[18] = {10,13,16,30,33,23,30,61,62,45,59,119,116,90,156,198,373,326};
+
+//yolov4
+float biases[18] = {12, 16, 19, 36, 40, 28, 36, 75, 76, 55, 72, 146, 142, 110, 192, 243, 459, 401};
 
 //yolov3-tiny
 float biases_tiny[12] = {10,14,23,27,37,58,81,82,135,169,344,319};
@@ -139,7 +142,7 @@ int yolo_num_detections(layer l,float thresh)
     return count;
 }
 
-int num_detections(vector<layer> layers_params,float thresh)
+int num_detections(std::vector<layer> layers_params,float thresh)
 {
     int i;
     int s=0;
@@ -151,7 +154,7 @@ int num_detections(vector<layer> layers_params,float thresh)
 
 }
 
-detection* make_network_boxes(vector<layer> layers_params,float thresh,int* num)
+detection* make_network_boxes(std::vector<layer> layers_params,float thresh,int* num)
 {
     layer l = layers_params[0];
     int i;
@@ -242,7 +245,7 @@ int get_yolo_detections(layer l,int w, int h, int netw,int neth,float thresh,int
 }
 
 
-void fill_network_boxes(vector<layer> layers_params,int img_w,int img_h,int net_w,int net_h,float thresh, float hier, int *map,int relative,detection *dets)
+void fill_network_boxes(std::vector<layer> layers_params,int img_w,int img_h,int net_w,int net_h,float thresh, float hier, int *map,int relative,detection *dets)
 {
     int j;
     for(j=0;j<layers_params.size();++j){
@@ -265,9 +268,9 @@ detection* get_network_boxes(vector<layer> layers_params,
 }
 
 //get detection result
-detection* get_detections(vector<Blob<float>*> blobs,int img_w,int img_h,int net_w,int net_h,int *nboxes)
+detection* get_detections(std::vector<Blob<float>*> blobs,int img_w,int img_h,int net_w,int net_h, float thresh, int classes, int *nboxes)
 {
-    vector<layer> layers_params;
+    std::vector<layer> layers_params;
     layers_params.clear();
     for(int i=0;i<blobs.size();++i){
         layer l_params;
