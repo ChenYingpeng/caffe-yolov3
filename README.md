@@ -17,6 +17,10 @@ cmake ..
 
 make -j6
 
+# Darknet2Caffe
+darknet2caffe link [github](https://github.com/ChenYingpeng/darknet2caffe)
+
+
 # Demo
 First,download model and put it into dir caffemodel.
 
@@ -41,8 +45,6 @@ Baidu link [model](https://pan.baidu.com/s/1yiCrnmsOm0hbweJBiiUScQ)
 1.Only inference on GPU platform,such as RTX2080, GTX1060,Jetson Tegra X1,TX2,nano,Xavier etc.
 
 2.Support model such as yolov4,yolov3,yolov3-spp,yolov3-tiny,mobilenet_v1_yolov3,mobilenet_v2_yolov3 etc.
-
-3. darknet2caffe link [github](https://github.com/ChenYingpeng/darknet2caffe)
 
 
 ### References
