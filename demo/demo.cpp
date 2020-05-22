@@ -53,7 +53,7 @@ int main( int argc, char** argv )
     Mat img = imread(image_path);
     
     //detect
-    float thresh = 0.5;
+    float thresh = 0.3;
     std::vector<bbox_t> bbox_vec = detector.detect(img,thresh);
 
     //show detection results
@@ -65,6 +65,12 @@ int main( int argc, char** argv )
         int top   = b.y;
         int bot   = b.y + b.h;
         rectangle(img,Point(left,top),Point(right,bot),Scalar(0,0,255),3,8,0);
+        LOG(INFO) << " label = " << b.obj_id
+                  << " prob = " << b.prob
+                  << " left = " << left
+                  << " right = " << right
+                  << " top = " << top
+                  << " bot = " << bot;
     }
 
     ////////show with opencv
