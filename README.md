@@ -24,16 +24,16 @@ darknet2caffe link [github](https://github.com/ChenYingpeng/darknet2caffe)
 # Demo
 First,download model and put it into dir caffemodel.
 
-$ ./x86_64/bin/demo ../prototxt/yolov4.prototxt ../caffemodel/yolov4.caffemodel ../images/dog.jpg 
+$ `./x86_64/bin/demo ../prototxt/yolov4.prototxt ../caffemodel/yolov4.caffemodel ../images/dog.jpg` 
 
 # Eval
 1. Run
-$ ./x86_64/bin/eval ../prototxt/yolov4.prototxt ../caffemodel/yolov4.caffemodel /path/to/coco/val2017/
+$ `./x86_64/bin/eval ../prototxt/yolov4.prototxt ../caffemodel/yolov4.caffemodel /path/to/coco/val2017/`
 
 generate `coco_results.json` on `results/`.
 
 2. Run
-$ python coco_eval/coco_eval.py --gt-json path/to/coco/annotations/instances_val2017.json  --pred-json results/coco_results.json
+$ `python coco_eval/coco_eval.py --gt-json path/to/coco/annotations/instances_val2017.json  --pred-json results/coco_results.json`
 
 3.Yolov4 input size 608x608
 ```
